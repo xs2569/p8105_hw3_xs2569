@@ -1,0 +1,37 @@
+---
+title: "p8105_hw2_xs2569"
+author: "Xun Sun"
+date: "2024-10-06"
+output:
+  github_document
+---
+
+
+
+# Problem 2 - NHANES Accelerometer Data
+```{r message = FALSE, warning = FALSE}
+# Load the necessary libraries
+library(tidyverse)
+library(readxl)
+```
+
+```{r}
+# Read and clean the demographic dataset
+demographics_df <- 
+  read_csv("./data/nhanes_covar.csv",skip = 4) |> 
+  janitor::clean_names() |>
+  filter(age >= 21, !is.na(education), !is.na(sex)) # Exclude participants under 21 and those with missing data
+View(demographics_df)
+```
+# Read and clean the accelerometer dataset
+accelerometer_df <- 
+  read_csv("./data/nhanes_accelerometer.csv",skip = 4) |>
+  janitor::clean_names()
+
+# Join the demographic and accelerometer datasets by participant ID
+final_data <- left_join(accelerometer_df, demographics_df, by = "participant_id")
+
+# View the cleaned final dataset
+view(final_data)
+```
+
