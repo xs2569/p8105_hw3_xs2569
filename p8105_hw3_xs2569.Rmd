@@ -57,10 +57,12 @@ education_sex_table <- final_data |>
   summarise(count = n(), .groups = "drop") |>
   pivot_wider(names_from = sex, values_from = count) |>
   mutate(Total = Male + Female)
-view(education_sex_table)
+# view(education_sex_table)
 # Display the table
 knitr::kable(education_sex_table, caption = "Number of Men and Women in Each Education Category")
 ```
+For education, there are 115 individuals in college group, while there are 58 and 55 in high school and less than high school.
+For sex, in each group, the numbers of individuals for male and female group are similar.
 
 ```{r}
 # Visualize age distributions for men and women in each education category
@@ -72,6 +74,9 @@ ggplot(final_data, aes(x = age, fill = sex)) +
        fill = "Sex") +
   theme_minimal()
 ```
+We can see different distribution for male and female of age in the three education groups.
+The six distributions are not symmetric and all the three education groups of female on age are bimodal distribution.
+
 
 ```{r}
 # Calculate total daily activity for each participant
@@ -88,7 +93,7 @@ ggplot(final_data, aes(x = age, y = total_activity, color = sex)) +
        color = "Sex") +
   theme_minimal()
 ```
-
+We can observe that total daily activity generally increases with age at first and then decreases. Regardless of gender, educational background, or age, there are significant differences between individuals. In the high school and college groups, the average activity level of females is higher than that of males at any age. However, in the "less than high school" group, females' activity levels are initially lower than males as they age but eventually surpass them.
 
 ```{r}
 # Prepare data for 24-hour activity plot
@@ -108,4 +113,33 @@ ggplot(activity_long, aes(x = minute, y = activity, color = sex)) +
        x = "Time of Day", y = "Activity (MIMS)",
        color = "Sex") +
   theme_minimal()
+```
+We can see similar patterns between male and female in the three education groups.
+The lowest MIMS is arround 4AM, the highest MIMS various between groups arround 8am to 8pm in a day.
+
+```{r}
+# Import necessary libraries
+library(tidyverse)
+# Define function to process files
+process_file <- function(file_path) {
+  read_csv(file_path) |>
+    janitor::clean_names() |>
+    mutate(
+      ride_id = as.character(ride_id),
+      rideable_type = as.factor(rideable_type),
+      start_station_name = as.character(start_station_name),
+      end_station_name = as.character(end_station_name),
+      member_casual = as.factor(member_casual)
+    ) 
+}
+
+# Read all CSV files
+file_paths <- c(
+  "./data/July 2024 Citi.csv",
+  "./data/Jan 2024 Citi.csv",
+  "./data/July 2020 Citi.csv",
+  "./data/Jan 2020 Citi.csv"
+)
+bike_data <- map_df(file_paths, process_file)
+
 ```
