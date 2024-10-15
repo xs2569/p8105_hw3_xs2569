@@ -6,12 +6,33 @@ output:
   github_document
 ---
 
+# Problem 1 - 
+```{r}
+library(tidyverse)
+library(p8105.datasets)
+data("ny_noaa")
+```
+Missing data is a significant issue in this dataset. Here are the counts of missing values for each variable:
+
+- `id`: `r sum(is.na(ny_noaa$id))`
+- `date`: `r sum(is.na(ny_noaa$date))`
+- `prcp`: `r sum(is.na(ny_noaa$prcp))`
+- `snow`: `r sum(is.na(ny_noaa$snow))`
+- `snwd`: `r sum(is.na(ny_noaa$snwd))`
+- `tmax`: `r sum(is.na(ny_noaa$tmax))`
+- `tmin`: `r sum(is.na(ny_noaa$tmin))`
+
+
+```{r}
+
+```
+
+
 
 
 # Problem 2 - NHANES Accelerometer Data
 ```{r message = FALSE, warning = FALSE}
 # Load the necessary libraries
-library(tidyverse)
 library(readxl)
 ```
 
@@ -160,9 +181,10 @@ view(bike_data)
 ride_summary <- bike_data |>
   group_by(year, month, member_casual) |>
   summarise(total_rides = n(), .groups = 'drop') |>
-  pivot_wider(names_from = member_casual, values_from = total_rides) |>
+  pivot_wider(names_from = member_casual, values_from = total_rides, values_fill = 0) |>
   mutate(total = casual + member) |>
-  arrange(year, month)
+  arrange(year, month) 
+  
 
 # Display the table using knitr::kable for better readability
 knitr::kable(ride_summary, 
@@ -180,7 +202,6 @@ popular_stations_july_2024 <- bike_data |>
   summarise(number_of_rides = n()) |>
   arrange(desc(number_of_rides)) |>
   slice_head(n = 5)
-  pivot_wider(names_from = member_casual, values_from = total_rides, values_fill = 0)
 
 # Display the table using knitr::kable for better readability
 knitr::kable(popular_stations_july_2024,
