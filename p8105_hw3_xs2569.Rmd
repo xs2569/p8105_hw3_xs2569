@@ -24,8 +24,63 @@ Missing data is a significant issue in this dataset. Here are the counts of miss
 
 
 ```{r}
+# Data cleaning
+ny_noaa_clean <- ny_noaa %>%
+  separate(date, into = c("year", "month", "day"), sep = "-") %>%
+  mutate(
+    year = as.integer(year),
+    month = as.integer(month),
+    day = as.integer(day),
+    prcp = prcp / 10,  # Convert to mm
+    tmax = as.numeric(tmax) / 10,  # Convert to degrees Celsius
+    tmin = as.numeric(tmin) / 10   # Convert to degrees Celsius
+  )
 
+# Most commonly observed snowfall values
+snow_values <- ny_noaa_clean %>%
+  count(snow) %>%
+  arrange(desc(n)) %>%
+  head(5)
+
+print(snow_values)
 ```
+```{r}
+snow_values %>%
+  knitr::kable()
+```
+
+```{r}
+jan_july_tmax <- ny_noaa_clean %>%
+  filter(month %in% c(1, 7)) %>%
+  group_by(id, year, month) %>%
+  summarize(avg_tmax = mean(tmax, na.rm = TRUE)) %>%
+  ungroup()
+
+ggplot(jan_july_tmax, aes(x = year, y = avg_tmax, group = id)) +
+  geom_line(alpha = 0.3) +
+  facet_wrap(~ month, ncol = 2, labeller = labeller(month = c("1" = "January", "7" = "July"))) +
+  labs(title = "Average Maximum Temperature by Station",
+       x = "Year", y = "Average Max Temperature (°C)") +
+  theme_minimal()
+```
+```{r}
+p1 <- ggplot(ny_noaa_clean, aes(x = tmin, y = tmax)) +
+  geom_hex(bins = 50) +
+  labs(title = "Tmax vs Tmin",
+       x = "Minimum Temperature (°C)", y = "Maximum Temperature (°C)") +
+  theme_minimal()
+
+p2 <- ny_noaa_clean %>%
+  filter(snow > 0, snow < 100) %>%
+  ggplot(aes(x = snow, y = as.factor(year))) +
+  geom_density_ridges() +
+  labs(title = "Distribution of Snowfall by Year",
+       x = "Snowfall (mm)", y = "Year") +
+  theme_minimal()
+
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+```
+
 
 
 
@@ -82,6 +137,7 @@ education_sex_table <- final_data |>
 # Display the table
 knitr::kable(education_sex_table, caption = "Number of Men and Women in Each Education Category")
 ```
+
 For education, there are 115 individuals in college group, while there are 58 and 55 in high school and less than high school.
 For sex, in each group, the numbers of individuals for male and female group are similar.
 
@@ -193,6 +249,9 @@ knitr::kable(ride_summary,
              format = "html",
              digits = 0)
 ```
+From this table, the total rides are higher in July than in January in each year.
+The numbers of members are higher than casual riders in every year-month combination.
+The total riders are higher in 2024 than in 2020 of the same month.
 
 ```{r}
 # Create a table of the 5 most popular starting stations for July 2024
@@ -211,6 +270,8 @@ knitr::kable(popular_stations_july_2024,
              digits = 0)
              
 ```
+From this table, we can see the starting station with the top 5 highest numbers of rides.
+The first station is Pier 61 at Chelsea Piers with 163 numbers of rides.
 
 ```{r}
 # Calculate median ride duration by day of week, month, and year
@@ -233,7 +294,8 @@ ggplot(ride_duration_summary, aes(x = weekdays, y = median_duration, color = mon
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
-
+Form this plot, we can see the trends of median of rides during weeks. The peaks appears arround Saturdays and Sundays.
+Plus, the median of rides are higher in July than that in January in both year.
 ```{r}
 # Filter data for 2024 and create a new column for ride duration in minutes
 bike_data_2024 <- bike_data |>
