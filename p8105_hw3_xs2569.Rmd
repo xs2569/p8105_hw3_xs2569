@@ -117,19 +117,29 @@ ggplot(activity_long, aes(x = minute, y = activity, color = sex)) +
 We can see similar patterns between male and female in the three education groups.
 The lowest MIMS is arround 4AM, the highest MIMS various between groups arround 8am to 8pm in a day.
 
+
+# Problem 3 - Citi Bike Data
 ```{r}
 # Import necessary libraries
 library(tidyverse)
+
 # Define function to process files
 process_file <- function(file_path) {
-  read_csv(file_path) |>
+  # Extract month and year from file name
+  file_name <- basename(file_path)
+  month <- str_extract(file_name, "Jan|July")
+  year <- str_extract(file_name, "\\d{4}")
+  
+  read_csv(file_path, na=c("","NA","NULL",".")) |>
     janitor::clean_names() |>
     mutate(
       ride_id = as.character(ride_id),
       rideable_type = as.factor(rideable_type),
       start_station_name = as.character(start_station_name),
       end_station_name = as.character(end_station_name),
-      member_casual = as.factor(member_casual)
+      member_casual = as.factor(member_casual),
+      month = month,
+      year = as.numeric(year)
     ) 
 }
 
@@ -141,5 +151,118 @@ file_paths <- c(
   "./data/Jan 2020 Citi.csv"
 )
 bike_data <- map_df(file_paths, process_file)
+
+view(bike_data)
+
+```
+
+```{r}
+ride_summary <- bike_data |>
+  group_by(year, month, member_casual) |>
+  summarise(total_rides = n(), .groups = 'drop') |>
+  pivot_wider(names_from = member_casual, values_from = total_rides) |>
+  mutate(total = casual + member) |>
+  arrange(year, month)
+
+# Display the table using knitr::kable for better readability
+knitr::kable(ride_summary, 
+             col.names = c("Year", "Month", "Casual Riders", "Members", "Total Rides"),
+             caption = "Total Number of Rides by Year, Month, and Rider Type",
+             format = "html",
+             digits = 0)
+```
+
+```{r}
+# Create a table of the 5 most popular starting stations for July 2024
+popular_stations_july_2024 <- bike_data |>
+  filter(year == 2024, month == "July") |>
+  group_by(start_station_name) |>
+  summarise(number_of_rides = n()) |>
+  arrange(desc(number_of_rides)) |>
+  slice_head(n = 5)
+  pivot_wider(names_from = member_casual, values_from = total_rides, values_fill = 0)
+
+# Display the table using knitr::kable for better readability
+knitr::kable(popular_stations_july_2024,
+             col.names = c("Starting Station", "Number of Rides"),
+             caption = "Top 5 Most Popular Starting Stations in July 2024",
+             format = "html",
+             digits = 0)
+             
+```
+
+```{r}
+# Calculate median ride duration by day of week, month, and year
+ride_duration_summary <- bike_data |>
+  group_by(year, month, weekdays) |>
+  summarise(median_duration = median(duration, na.rm = TRUE), .groups = 'drop')
+
+# Create the plot
+ggplot(ride_duration_summary, aes(x = weekdays, y = median_duration, color = month)) +
+  geom_point() +
+  geom_line(aes(group = month)) +
+  facet_wrap(~ year, scales = "free_y", ncol = 2) +
+  labs(
+    title = "Median Ride Duration by Day of Week, Month, and Year",
+    x = "Day of Week",
+    y = "Median Ride Duration (minutes)",
+    color = "Month"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+# Filter data for 2024 and create a new column for ride duration in minutes
+bike_data_2024 <- bike_data |>
+  filter(year == 2024) |>
+  mutate(duration_minutes = duration)
+
+# Create the plot
+ggplot(bike_data_2024, aes(x = month, y = duration_minutes, fill = rideable_type)) +
+  geom_violin() +  # Remove outliers for better visibility
+  facet_wrap(~ member_casual, ncol = 1) +
+  coord_cartesian(ylim = c(0, 60)) +  # Limit y-axis to 60 minutes for better focus
+  labs(
+    title = "Distribution of Ride Duration in 2024",
+    subtitle = "By Month, Membership Status, and Bike Type",
+    x = "Month",
+    y = "Ride Duration",
+    fill = "Bike Type"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  ) +
+  scale_fill_brewer(palette = "Set2")
+
+# Add a brief explanation
+cat("This figure shows the distribution of ride durations in 2024, broken down by month, membership status, and bike type. The box plots represent the interquartile range, with the median shown as a line inside each box. The y-axis is limited to 60 minutes to focus on the most common ride durations and improve readability.")
+
+# Create a new plot focusing on longer ride durations (60-200 minutes)
+ggplot(bike_data_2024 |> filter(duration_minutes >= 60 & duration_minutes <= 200), 
+       aes(x = month, y = duration_minutes, fill = rideable_type)) +
+  geom_violin() +
+  facet_wrap(~ member_casual, ncol = 1) +
+  coord_cartesian(ylim = c(60, 250)) +
+  labs(
+    title = "Distribution of Longer Ride Durations in 2024 (60-200 minutes)",
+    subtitle = "By Month, Membership Status, and Bike Type",
+    x = "Month",
+    y = "Ride Duration (minutes)",
+    fill = "Bike Type"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  ) +
+  scale_fill_brewer(palette = "Set2")
+
+# Add an explanation for the new plot
+cat("This second figure focuses on longer ride durations, ranging from 60 to 200 minutes, in 2024. It provides insight into the distribution of extended rides, which may represent different usage patterns or user behaviors compared to shorter trips. The violin plots show the density of ride durations within this range, allowing for comparison across months, membership types, and bike types for these longer journeys.")
+
 
 ```
